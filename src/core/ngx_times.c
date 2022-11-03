@@ -59,6 +59,7 @@ static char  *months[] = { "Jan", "Feb", "Mar", "Apr", "May", "Jun",
 void
 ngx_time_init(void)
 {
+	// 初始化一些时间字符串, 此时只是初始化其长度,之后直接添加时间即可
     ngx_cached_err_log_time.len = sizeof("1970/09/28 12:00:00") - 1;
     ngx_cached_http_time.len = sizeof("Mon, 28 Sep 1970 06:00:00 GMT") - 1;
     ngx_cached_http_log_time.len = sizeof("28/Sep/1970:12:00:00 +0600") - 1;

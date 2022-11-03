@@ -93,7 +93,7 @@ ngx_master_process_cycle(ngx_cycle_t *cycle)
     ngx_msec_t         delay;
     ngx_listening_t   *ls;
     ngx_core_conf_t   *ccf;
-
+	// 设置信号集
     sigemptyset(&set);
     sigaddset(&set, SIGCHLD);
     sigaddset(&set, SIGALRM);
@@ -105,12 +105,12 @@ ngx_master_process_cycle(ngx_cycle_t *cycle)
     sigaddset(&set, ngx_signal_value(NGX_TERMINATE_SIGNAL));
     sigaddset(&set, ngx_signal_value(NGX_SHUTDOWN_SIGNAL));
     sigaddset(&set, ngx_signal_value(NGX_CHANGEBIN_SIGNAL));
-
+	// 阻塞上面设置的信号
     if (sigprocmask(SIG_BLOCK, &set, NULL) == -1) {
         ngx_log_error(NGX_LOG_ALERT, cycle->log, ngx_errno,
                       "sigprocmask() failed");
     }
-
+	// 清空信号集
     sigemptyset(&set);
 
 
@@ -132,16 +132,17 @@ ngx_master_process_cycle(ngx_cycle_t *cycle)
 
 
     ccf = (ngx_core_conf_t *) ngx_get_conf(cycle->conf_ctx, ngx_core_module);
-
+	// 启动子进程
     ngx_start_worker_processes(cycle, ccf->worker_processes,
                                NGX_PROCESS_RESPAWN);
+	// 启动cache manager 进程
     ngx_start_cache_manager_processes(cycle, 0);
 
     ngx_new_binary = 0;
     delay = 0;
     sigio = 0;
     live = 1;
-
+	// master 进程的循环
     for ( ;; ) {
         if (delay) {
             if (ngx_sigalrm) {
@@ -157,7 +158,7 @@ ngx_master_process_cycle(ngx_cycle_t *cycle)
             itv.it_interval.tv_usec = 0;
             itv.it_value.tv_sec = delay / 1000;
             itv.it_value.tv_usec = (delay % 1000 ) * 1000;
-
+			// 设置一个定时器
             if (setitimer(ITIMER_REAL, &itv, NULL) == -1) {
                 ngx_log_error(NGX_LOG_ALERT, cycle->log, ngx_errno,
                               "setitimer() failed");
@@ -165,7 +166,7 @@ ngx_master_process_cycle(ngx_cycle_t *cycle)
         }
 
         ngx_log_debug0(NGX_LOG_DEBUG_EVENT, cycle->log, 0, "sigsuspend");
-
+		// 阻塞在空信号集上. 也就是说任何信号过来都会唤醒进程
         sigsuspend(&set);
 
         ngx_time_update();
@@ -181,6 +182,7 @@ ngx_master_process_cycle(ngx_cycle_t *cycle)
         }
 
         if (!live && (ngx_terminate || ngx_quit)) {
+			// master 进程关闭
             ngx_master_process_exit(cycle);
         }
 
@@ -195,7 +197,7 @@ ngx_master_process_cycle(ngx_cycle_t *cycle)
             }
 
             sigio = ccf->worker_processes + 2 /* cache processes */;
-
+			// 发送信号到子进程中 执行 terminate操作
             if (delay > 1000) {
                 ngx_signal_worker_processes(cycle, SIGKILL);
             } else {
@@ -205,12 +207,13 @@ ngx_master_process_cycle(ngx_cycle_t *cycle)
 
             continue;
         }
-
+		// 执行quit操作, 发送shutdown 信号
         if (ngx_quit) {
             ngx_signal_worker_processes(cycle,
                                         ngx_signal_value(NGX_SHUTDOWN_SIGNAL));
 
             ls = cycle->listening.elts;
+			// 关闭listener socket
             for (n = 0; n < cycle->listening.nelts; n++) {
                 if (ngx_close_socket(ls[n].fd) == -1) {
                     ngx_log_error(NGX_LOG_EMERG, cycle->log, ngx_socket_errno,
@@ -222,10 +225,10 @@ ngx_master_process_cycle(ngx_cycle_t *cycle)
 
             continue;
         }
-
+		// 重新加载配置的信号
         if (ngx_reconfigure) {
             ngx_reconfigure = 0;
-
+			// 如果是二进制变了,
             if (ngx_new_binary) {
                 ngx_start_worker_processes(cycle, ccf->worker_processes,
                                            NGX_PROCESS_RESPAWN);
@@ -257,7 +260,7 @@ ngx_master_process_cycle(ngx_cycle_t *cycle)
             ngx_signal_worker_processes(cycle,
                                         ngx_signal_value(NGX_SHUTDOWN_SIGNAL));
         }
-
+		// 重新信号
         if (ngx_restart) {
             ngx_restart = 0;
             ngx_start_worker_processes(cycle, ccf->worker_processes,
@@ -265,7 +268,7 @@ ngx_master_process_cycle(ngx_cycle_t *cycle)
             ngx_start_cache_manager_processes(cycle, 0);
             live = 1;
         }
-
+		// 日志滚动
         if (ngx_reopen) {
             ngx_reopen = 0;
             ngx_log_error(NGX_LOG_NOTICE, cycle->log, 0, "reopening logs");
@@ -273,7 +276,7 @@ ngx_master_process_cycle(ngx_cycle_t *cycle)
             ngx_signal_worker_processes(cycle,
                                         ngx_signal_value(NGX_REOPEN_SIGNAL));
         }
-
+		// binary change时的处理
         if (ngx_change_binary) {
             ngx_change_binary = 0;
             ngx_log_error(NGX_LOG_NOTICE, cycle->log, 0, "changing binary");
@@ -346,7 +349,7 @@ ngx_single_process_cycle(ngx_cycle_t *cycle)
     }
 }
 
-
+// 启动子进程
 static void
 ngx_start_worker_processes(ngx_cycle_t *cycle, ngx_int_t n, ngx_int_t type)
 {
@@ -358,7 +361,7 @@ ngx_start_worker_processes(ngx_cycle_t *cycle, ngx_int_t n, ngx_int_t type)
     ch.command = NGX_CMD_OPEN_CHANNEL;
 
     for (i = 0; i < n; i++) {
-
+		// 创建子进程
         ngx_spawn_process(cycle, ngx_worker_process_cycle,
                           (void *) (intptr_t) i, "worker process", type);
 

@@ -25,15 +25,17 @@ static void ngx_signal_handler(int signo);
 static void ngx_process_get_status(void);
 static void ngx_unlock_mutexes(ngx_pid_t pid);
 
-
+// 记录参数的个数, 从main函数的argc拷贝而来
 int              ngx_argc;
+// 记录参数,从main函数的argv deep拷贝而来
 char           **ngx_argv;
+// 是main argv的浅拷贝
 char           **ngx_os_argv;
 
-ngx_int_t        ngx_process_slot;
+ngx_int_t        ngx_process_slot;					// 作为一个index,创建子进程时使用
 ngx_socket_t     ngx_channel;
-ngx_int_t        ngx_last_process;
-ngx_process_t    ngx_processes[NGX_MAX_PROCESSES];
+ngx_int_t        ngx_last_process;					// 最后一个子进程
+ngx_process_t    ngx_processes[NGX_MAX_PROCESSES];	// 存储子进程
 
 
 ngx_signal_t  signals[] = {
@@ -113,7 +115,7 @@ ngx_spawn_process(ngx_cycle_t *cycle, ngx_spawn_proc_pt proc, void *data,
     if (respawn != NGX_PROCESS_DETACHED) {
 
         /* Solaris 9 still has no AF_LOCAL */
-
+		// 创建一对连接的local sockets
         if (socketpair(AF_UNIX, SOCK_STREAM, 0, ngx_processes[s].channel) == -1)
         {
             ngx_log_error(NGX_LOG_ALERT, cycle->log, ngx_errno,
@@ -125,7 +127,7 @@ ngx_spawn_process(ngx_cycle_t *cycle, ngx_spawn_proc_pt proc, void *data,
                        "channel %d:%d",
                        ngx_processes[s].channel[0],
                        ngx_processes[s].channel[1]);
-
+		// 设置socket属性 non-block
         if (ngx_nonblocking(ngx_processes[s].channel[0]) == -1) {
             ngx_log_error(NGX_LOG_ALERT, cycle->log, ngx_errno,
                           ngx_nonblocking_n " failed while spawning \"%s\"",
@@ -182,7 +184,7 @@ ngx_spawn_process(ngx_cycle_t *cycle, ngx_spawn_proc_pt proc, void *data,
 
     ngx_process_slot = s;
 
-
+	// 创建子进程
     pid = fork();
 
     switch (pid) {
@@ -193,24 +195,24 @@ ngx_spawn_process(ngx_cycle_t *cycle, ngx_spawn_proc_pt proc, void *data,
         ngx_close_channel(ngx_processes[s].channel, cycle->log);
         return NGX_INVALID_PID;
 
-    case 0:
+    case 0:		// 进程从这里为入口开始执行 传递的函数
         ngx_pid = ngx_getpid();
-        proc(cycle, data);
+        proc(cycle, data);	// 执行子进程的循环
         break;
 
     default:
         break;
     }
-
+	// 父进程继续从这里执行
     ngx_log_error(NGX_LOG_NOTICE, cycle->log, 0, "start %s %P", name, pid);
-
+	// 记录子进程的信息
     ngx_processes[s].pid = pid;
     ngx_processes[s].exited = 0;
 
     if (respawn >= 0) {
         return pid;
     }
-
+	// 同样是记录子进程的信息
     ngx_processes[s].proc = proc;
     ngx_processes[s].data = data;
     ngx_processes[s].name = name;

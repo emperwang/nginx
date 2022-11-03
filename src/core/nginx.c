@@ -185,13 +185,17 @@ ngx_module_t  ngx_core_module = {
 
 
 ngx_uint_t          ngx_max_module;
-
+// 一下几个参数都是从 nginx启动参数中解析的结果
 static ngx_uint_t   ngx_show_help;
 static ngx_uint_t   ngx_show_version;
 static ngx_uint_t   ngx_show_configure;
+// 从参数解析的路径前缀
 static u_char      *ngx_prefix;
+// 从参数解析的配置文件
 static u_char      *ngx_conf_file;
+// 配置参数
 static u_char      *ngx_conf_params;
+// 传递给进程的信号
 static char        *ngx_signal;
 
 
@@ -211,7 +215,7 @@ main(int argc, char *const *argv)
     if (ngx_strerror_init() != NGX_OK) {
         return 1;
     }
-
+	// 解析传递的 参数.
     if (ngx_get_options(argc, argv) != NGX_OK) {
         return 1;
     }
@@ -329,7 +333,7 @@ main(int argc, char *const *argv)
     for (i = 0; ngx_modules[i]; i++) {
         ngx_modules[i]->index = ngx_max_module++;
     }
-
+	// cycle 结构的的初始化. 配置文件解析, listen socket 都是在这里init的
     cycle = ngx_init_cycle(&init_cycle);
     if (cycle == NULL) {
         if (ngx_test_config) {
@@ -370,6 +374,7 @@ main(int argc, char *const *argv)
     }
 
     if (!ngx_inherited && ccf->daemon) {
+		// 创建后台进程
         if (ngx_daemon(cycle->log) != NGX_OK) {
             return 1;
         }
@@ -404,11 +409,12 @@ main(int argc, char *const *argv)
     }
 
     ngx_use_stderr = 0;
-
+	// 单进程处理
     if (ngx_process == NGX_PROCESS_SINGLE) {
         ngx_single_process_cycle(cycle);
 
     } else {
+		// 多进程处理
         ngx_master_process_cycle(cycle);
     }
 
@@ -680,6 +686,7 @@ ngx_get_options(int argc, char *const *argv)
         p = (u_char *) argv[i];
 
         if (*p++ != '-') {
+			// 输出错误日志
             ngx_log_stderr(0, "invalid option: \"%s\"", argv[i]);
             return NGX_ERROR;
         }

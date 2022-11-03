@@ -34,7 +34,7 @@ ngx_event_process_posted(ngx_cycle_t *cycle,
         if (ev == NULL) {
             return;
         }
-
+		// 从queue中删除 event
         ngx_delete_posted_event(ev);
 
         ev->handler(ev);

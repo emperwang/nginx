@@ -243,7 +243,7 @@ ngx_process_events_and_timers(ngx_cycle_t *cycle)
     }
 
     delta = ngx_current_msec;
-
+	// 处理epoll 事件
     (void) ngx_process_events(cycle, timer, flags);
 
     delta = ngx_current_msec - delta;
@@ -265,7 +265,7 @@ ngx_process_events_and_timers(ngx_cycle_t *cycle)
 
     ngx_log_debug1(NGX_LOG_DEBUG_EVENT, cycle->log, 0,
                    "posted events %p", ngx_posted_events);
-
+	// 如果支持多线程, 则唤醒线程进行处理
     if (ngx_posted_events) {
         if (ngx_threaded) {
             ngx_wakeup_worker_thread(cycle);

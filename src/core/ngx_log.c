@@ -210,11 +210,13 @@ ngx_log_stderr(ngx_err_t err, const char *fmt, ...)
     u_char    errstr[NGX_MAX_ERROR_STR];
 
     last = errstr + NGX_MAX_ERROR_STR;
+	// 这是留出7个char位置,用于下面的 字符串 nginx:
     p = errstr + 7;
-
+	// 这是日志的开头, 7个char大小
     ngx_memcpy(errstr, "nginx: ", 7);
 
     va_start(args, fmt);
+	// 参数解析, 并输出到 p指向的数组中
     p = ngx_vslprintf(p, last, fmt, args);
     va_end(args);
 
@@ -226,8 +228,9 @@ ngx_log_stderr(ngx_err_t err, const char *fmt, ...)
         p = last - NGX_LINEFEED_SIZE;
     }
 
+	// 在最后设置换行符
     ngx_linefeed(p);
-
+	// 输出日志消息到 标准错误输出
     (void) ngx_write_console(ngx_stderr, errstr, p - errstr);
 }
 

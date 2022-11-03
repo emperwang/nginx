@@ -308,7 +308,7 @@ ngx_open_listening_sockets(ngx_cycle_t *cycle)
 
                 continue;
             }
-
+			// 创建socket
             s = ngx_socket(ls[i].sockaddr->sa_family, ls[i].type, 0);
 
             if (s == -1) {
@@ -316,7 +316,7 @@ ngx_open_listening_sockets(ngx_cycle_t *cycle)
                               ngx_socket_n " %V failed", &ls[i].addr_text);
                 return NGX_ERROR;
             }
-
+			// 设置socket参数
             if (setsockopt(s, SOL_SOCKET, SO_REUSEADDR,
                            (const void *) &reuseaddr, sizeof(int))
                 == -1)
@@ -335,7 +335,7 @@ ngx_open_listening_sockets(ngx_cycle_t *cycle)
             }
 
 #if (NGX_HAVE_INET6 && defined IPV6_V6ONLY)
-
+			// ipv6 socket option 配置
             if (ls[i].sockaddr->sa_family == AF_INET6 && ls[i].ipv6only) {
                 int  ipv6only;
 
@@ -354,6 +354,7 @@ ngx_open_listening_sockets(ngx_cycle_t *cycle)
             /* TODO: close on exit */
 
             if (!(ngx_event_flags & NGX_USE_AIO_EVENT)) {
+				// no_blocking  设置
                 if (ngx_nonblocking(s) == -1) {
                     ngx_log_error(NGX_LOG_EMERG, log, ngx_socket_errno,
                                   ngx_nonblocking_n " %V failed",
@@ -371,7 +372,7 @@ ngx_open_listening_sockets(ngx_cycle_t *cycle)
 
             ngx_log_debug2(NGX_LOG_DEBUG_CORE, log, 0,
                            "bind() %V #%d ", &ls[i].addr_text, s);
-
+			// 地址绑定
             if (bind(s, ls[i].sockaddr, ls[i].socklen) == -1) {
                 err = ngx_socket_errno;
 
@@ -419,7 +420,7 @@ ngx_open_listening_sockets(ngx_cycle_t *cycle)
                 }
             }
 #endif
-
+			// 地址监听
             if (listen(s, ls[i].backlog) == -1) {
                 ngx_log_error(NGX_LOG_EMERG, log, ngx_socket_errno,
                               "listen() to %V, backlog %d failed",
@@ -450,7 +451,7 @@ ngx_open_listening_sockets(ngx_cycle_t *cycle)
 
         ngx_msleep(500);
     }
-
+	// 有失败,则打印日志
     if (failed) {
         ngx_log_error(NGX_LOG_EMERG, log, 0, "still could not bind()");
         return NGX_ERROR;

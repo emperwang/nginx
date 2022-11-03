@@ -407,7 +407,7 @@ ngx_epoll_add_event(ngx_event_t *ev, ngx_int_t event, ngx_uint_t flags)
         events = EPOLLOUT;
 #endif
     }
-
+	// 根据是否active 来判断是 add 还是 modify
     if (e->active) {
         op = EPOLL_CTL_MOD;
         events |= prev;
@@ -422,7 +422,7 @@ ngx_epoll_add_event(ngx_event_t *ev, ngx_int_t event, ngx_uint_t flags)
     ngx_log_debug3(NGX_LOG_DEBUG_EVENT, ev->log, 0,
                    "epoll add event: fd:%d op:%d ev:%08XD",
                    c->fd, op, ee.events);
-
+	// 添加 或者 修改 e->fd 对应的epoll 事件
     if (epoll_ctl(ep, op, c->fd, &ee) == -1) {
         ngx_log_error(NGX_LOG_ALERT, ev->log, ngx_errno,
                       "epoll_ctl(%d, %d) failed", op, c->fd);
@@ -506,7 +506,7 @@ ngx_epoll_add_connection(ngx_connection_t *c)
 
     ngx_log_debug2(NGX_LOG_DEBUG_EVENT, c->log, 0,
                    "epoll add connection: fd:%d ev:%08XD", c->fd, ee.events);
-
+	// 添加新的 fd到 epoll中
     if (epoll_ctl(ep, EPOLL_CTL_ADD, c->fd, &ee) == -1) {
         ngx_log_error(NGX_LOG_ALERT, c->log, ngx_errno,
                       "epoll_ctl(EPOLL_CTL_ADD, %d) failed", c->fd);
@@ -544,7 +544,7 @@ ngx_epoll_del_connection(ngx_connection_t *c, ngx_uint_t flags)
     op = EPOLL_CTL_DEL;
     ee.events = 0;
     ee.data.ptr = NULL;
-
+	// 从 epoll中删除一个 connection
     if (epoll_ctl(ep, op, c->fd, &ee) == -1) {
         ngx_log_error(NGX_LOG_ALERT, c->log, ngx_errno,
                       "epoll_ctl(%d, %d) failed", op, c->fd);
@@ -573,7 +573,7 @@ ngx_epoll_process_events(ngx_cycle_t *cycle, ngx_msec_t timer, ngx_uint_t flags)
 
     ngx_log_debug1(NGX_LOG_DEBUG_EVENT, cycle->log, 0,
                    "epoll timer: %M", timer);
-
+	// epoll_wait 获取事件
     events = epoll_wait(ep, event_list, (int) nevents, timer);
 
     err = (events == -1) ? ngx_errno : 0;

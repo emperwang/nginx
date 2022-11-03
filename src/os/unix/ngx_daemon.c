@@ -12,6 +12,11 @@
 ngx_int_t
 ngx_daemon(ngx_log_t *log)
 {
+	// 后台进程的创建步骤
+	// step 1: fork一个进程
+	// step 2: 父进程执行 exit 关闭操作
+	// step 3: 子进程执行 setsid
+	// step 4: 重新设置 标准输入 输出 描述符到 /dev/null
     int  fd;
 
     switch (fork()) {

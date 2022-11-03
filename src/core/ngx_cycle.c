@@ -264,7 +264,7 @@ ngx_init_cycle(ngx_cycle_t *old_cycle)
         ngx_destroy_cycle_pools(&conf);
         return NULL;
     }
-
+	// 解析配置
     if (ngx_conf_parse(&conf, &cycle->conf_file) != NGX_CONF_OK) {
         environ = senv;
         ngx_destroy_cycle_pools(&conf);
@@ -570,7 +570,7 @@ ngx_init_cycle(ngx_cycle_t *old_cycle)
 #endif
         }
     }
-
+	// 创建监听的socket,并绑定地址
     if (ngx_open_listening_sockets(cycle) != NGX_OK) {
         goto failed;
     }
@@ -591,7 +591,7 @@ ngx_init_cycle(ngx_cycle_t *old_cycle)
     }
 
     pool->log = cycle->log;
-
+	// 初始化 module.  modules数组时何时初始化的???
     for (i = 0; ngx_modules[i]; i++) {
         if (ngx_modules[i]->init_module) {
             if (ngx_modules[i]->init_module(cycle) != NGX_OK) {

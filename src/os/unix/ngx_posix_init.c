@@ -41,7 +41,7 @@ ngx_os_init(ngx_log_t *log)
 #endif
 
     ngx_init_setproctitle(log);
-
+	// 内存页 大小
     ngx_pagesize = getpagesize();
     ngx_cacheline_size = NGX_CPU_CACHE_LINE;
 
@@ -58,13 +58,13 @@ ngx_os_init(ngx_log_t *log)
     }
 
     ngx_cpuinfo();
-
+	// 最大文件数
     if (getrlimit(RLIMIT_NOFILE, &rlmt) == -1) {
         ngx_log_error(NGX_LOG_ALERT, log, errno,
                       "getrlimit(RLIMIT_NOFILE) failed)");
         return NGX_ERROR;
     }
-
+	// 也就是最大的socket数量
     ngx_max_sockets = (ngx_int_t) rlmt.rlim_cur;
 
 #if (NGX_HAVE_INHERITED_NONBLOCK || NGX_HAVE_ACCEPT4)
